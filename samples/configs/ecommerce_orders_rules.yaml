@@ -1,0 +1,96 @@
+# DataSentinel Quality Configuration: E-Commerce Orders Pipeline
+dataset_name: ecommerce_orders
+
+source:
+  type: csv
+  path: samples/data/ecommerce_orders.csv
+
+schema_drift:
+  enabled: true
+  baseline_store_path: .datasentinel/schemas
+  fail_on_drift: false
+
+anomaly_detection:
+  enabled: true
+  methods:
+    - zscore
+    - iqr
+  z_threshold: 3.0
+  iqr_multiplier: 1.5
+  columns:
+    - order_amount
+    - items_count
+  chunk_size: 50000
+
+rules:
+  - name: order_id_not_null
+    type: null_check
+    column: order_id
+    severity: critical
+    parameters:
+      allow_null: false
+      max_null_count: 0
+
+  - name: order_id_unique
+    type: unique_check
+    column: order_id
+    severity: critical
+    parameters:
+      allow_duplicates: false
+      max_duplicate_count: 0
+
+  - name: valid_customer_email_pattern
+    type: regex
+    column: customer_email
+    severity: error
+    parameters:
+      pattern: "^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\\.[a-zA-Z0-9-.]+$"
+      case_sensitive: false
+      allow_null: false
+
+  - name: positive_order_amount
+    type: range
+    column: order_amount
+    severity: critical
+    parameters:
+      min_value: 0.01
+      max_value: 50000.00
+      inclusive: true
+
+  - name: items_count_range
+    type: range
+    column: items_count
+    severity: error
+    parameters:
+      min_value: 1
+      max_value: 50
+      inclusive: true
+
+  - name: valid_order_status
+    type: foreign_key
+    column: status
+    severity: error
+    parameters:
+      allowed_values:
+        - COMPLETED
+        - PENDING
+        - SHIPPED
+        - CANCELLED
+
+alerts:
+  email:
+    enabled: false
+    smtp_host: localhost
+    smtp_port: 587
+    sender: alerts@datasentinel.internal
+    recipients:
+      - data-eng-team@company.internal
+  slack:
+    enabled: false
+    webhook_url_env: SLACK_WEBHOOK_URL
+    channel: "#data-quality-alerts"
+
+scheduler:
+  cron: "0 * * * *"  # Every hour
+  coalesce: true
+  max_instances: 1

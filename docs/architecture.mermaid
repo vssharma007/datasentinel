@@ -1,0 +1,74 @@
+graph TD
+    subgraph DataSources["Data Sources (Connectors Layer)"]
+        CSV["CSV Adapter (.csv)"]
+        Excel["Excel Adapter (.xlsx, .xls)"]
+        JSON["JSON Adapter (Flat & Nested Path)"]
+        SQLite["SQLite (SQLAlchemy 2.0)"]
+        Postgres["PostgreSQL (SQLAlchemy 2.0)"]
+        REST["REST API (Paginated httpx)"]
+    end
+
+    Registry["ConnectorRegistry (Open/Closed Principle)"]
+    DataSet["Unified DataSet Interface\n(Chunked Streaming <= 500k rows)"]
+
+    CSV --> Registry
+    Excel --> Registry
+    JSON --> Registry
+    SQLite --> Registry
+    Postgres --> Registry
+    REST --> Registry
+    Registry --> DataSet
+
+    subgraph CoreEngine["DataSentinel Core Engine"]
+        Config["YAML Rule Config & Pydantic v2\n(${ENV_VAR} Interpolation)"]
+        
+        RuleExec["RuleExecutor"]
+        subgraph Rules["Quality Rule Validators"]
+            R1["NullCheckRule"]
+            R2["UniqueCheckRule"]
+            R3["RangeCheckRule"]
+            R4["RegexCheckRule"]
+            R5["ForeignKeyCheckRule"]
+        end
+
+        SchemaReg["SchemaRegistry & Drift Detector\n(SHA-256 Fingerprints)"]
+        
+        AnomalyDet["AnomalyDetector\n(Z-Score |z|>3 & IQR 1.5x Fence)"]
+    end
+
+    Config --> RuleExec
+    DataSet --> RuleExec
+    RuleExec --> R1 & R2 & R3 & R4 & R5
+
+    DataSet --> SchemaReg
+    DataSet --> AnomalyDet
+
+    subgraph StorageAndReporting["Storage, Reporting & Alerting"]
+        Store[("SQLite Result Store\n(History & Trends)")]
+        ReportGen["ReportGenerator"]
+        HTML["Executive HTML Dashboard\n(Embedded Chart.js)"]
+        PDF["Executive PDF Summary\n(ReportLab)"]
+        AlertService["Alerting Service\n(Summary Only - No Raw Rows)"]
+        Email["SMTP Email Alert"]
+        Slack["Slack Webhook"]
+    end
+
+    RuleExec --> Store
+    SchemaReg --> Store
+    AnomalyDet --> Store
+
+    Store --> ReportGen
+    ReportGen --> HTML
+    ReportGen --> PDF
+
+    RuleExec --> AlertService
+    AlertService --> Email
+    AlertService --> Slack
+
+    subgraph Orchestration["CLI & Scheduler Layer"]
+        CLI["Typer CLI + Rich Output\n(validate, report, compare-schemas, etc.)"]
+        Scheduler["APScheduler Daemon\n(cron expressions, coalesce=True)"]
+    end
+
+    CLI --> CoreEngine
+    Scheduler --> CoreEngine

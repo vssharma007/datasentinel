@@ -1,0 +1,90 @@
+# DataSentinel Quality Configuration: HR Data & Payroll Records
+dataset_name: hr_employees
+
+source:
+  type: json
+  path: samples/data/hr_employees.json
+  nested_path: organization.employees
+
+schema_drift:
+  enabled: true
+  baseline_store_path: .datasentinel/schemas
+  fail_on_drift: true
+
+anomaly_detection:
+  enabled: true
+  methods:
+    - zscore
+    - iqr
+  z_threshold: 3.0
+  iqr_multiplier: 1.5
+  columns:
+    - salary
+    - performance_score
+
+rules:
+  - name: employee_id_unique
+    type: unique_check
+    column: employee_id
+    severity: critical
+    parameters:
+      allow_duplicates: false
+      max_duplicate_count: 0
+
+  - name: full_name_mandatory
+    type: null_check
+    column: full_name
+    severity: error
+    parameters:
+      allow_null: false
+
+  - name: valid_department_reference
+    type: foreign_key
+    column: department_id
+    severity: critical
+    parameters:
+      allowed_values:
+        - ENG
+        - SALES
+        - MARKETING
+        - HR
+        - LEGAL
+
+  - name: reasonable_salary_range
+    type: range
+    column: salary
+    severity: error
+    parameters:
+      min_value: 20000.00
+      max_value: 500000.00
+      inclusive: true
+
+  - name: valid_performance_score
+    type: range
+    column: performance_score
+    severity: warning
+    parameters:
+      min_value: 1.0
+      max_value: 5.0
+      inclusive: true
+
+  - name: valid_employee_id_pattern
+    type: regex
+    column: employee_id
+    severity: error
+    parameters:
+      pattern: "^EMP-[0-9]{4}$"
+      case_sensitive: true
+
+alerts:
+  email:
+    enabled: false
+    smtp_host: localhost
+    smtp_port: 587
+    sender: hr-audit@datasentinel.internal
+    recipients:
+      - hr-ops@company.internal
+
+scheduler:
+  cron: "0 0 * * 1"  # Weekly Monday midnight
+  coalesce: true

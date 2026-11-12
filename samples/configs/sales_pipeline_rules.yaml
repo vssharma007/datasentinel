@@ -1,0 +1,78 @@
+# DataSentinel Quality Configuration: Enterprise Sales Pipeline
+dataset_name: sales_pipeline
+
+source:
+  type: excel
+  path: samples/data/sales_pipeline.xlsx
+  sheet_name: Sheet1
+
+schema_drift:
+  enabled: true
+  baseline_store_path: .datasentinel/schemas
+  fail_on_drift: false
+
+anomaly_detection:
+  enabled: true
+  methods:
+    - zscore
+    - iqr
+  z_threshold: 3.0
+  iqr_multiplier: 1.5
+  columns:
+    - deal_size
+
+rules:
+  - name: opportunity_id_unique
+    type: unique_check
+    column: opportunity_id
+    severity: critical
+    parameters:
+      allow_duplicates: false
+
+  - name: account_name_present
+    type: null_check
+    column: account_name
+    severity: error
+    parameters:
+      allow_null: false
+
+  - name: valid_probability_percentage
+    type: range
+    column: probability
+    severity: critical
+    parameters:
+      min_value: 0.0
+      max_value: 1.0
+      inclusive: true
+
+  - name: reasonable_deal_size
+    type: range
+    column: deal_size
+    severity: error
+    parameters:
+      min_value: 1000.00
+      max_value: 1000000.00
+
+  - name: us_phone_format
+    type: regex
+    column: contact_phone
+    severity: warning
+    parameters:
+      pattern: "^\\+1-555-[0-9]{3}-[0-9]{4}$"
+
+  - name: valid_deal_stage
+    type: foreign_key
+    column: deal_stage
+    severity: error
+    parameters:
+      allowed_values:
+        - Prospecting
+        - Qualified
+        - Proposal
+        - Negotiation
+        - Closed Won
+        - Closed Lost
+
+scheduler:
+  cron: "*/30 * * * *"  # Every 30 minutes
+  coalesce: true
