@@ -1,6 +1,8 @@
 # 🛡️ DataSentinel — Automated Data Quality & Pipeline Monitoring Platform
 
 [![Python Version](https://img.shields.io/badge/python-3.12%20%7C%203.13-blue.svg)](https://www.python.org/)
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/vssharma007/datasentinel/actions)
+[![Tests](https://img.shields.io/badge/tests-41%20passed-success.svg)](https://github.com/vssharma007/datasentinel)
 [![Type Checked](https://img.shields.io/badge/mypy-strict%20pass%20(0%20errors)-brightgreen.svg)](https://mypy.readthedocs.io/)
 [![Coverage](https://img.shields.io/badge/coverage-79%25%20(target%20%3E75%25)-brightgreen.svg)](https://pytest.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -464,3 +466,7 @@ Success: no issues found in 39 source files
 
 ## ⚖️ License
 MIT License. Developed for Code A Nova Python Development Internship Sprint 2026.
+
+---
+
+*Last Verified & Updated: November 13, 2026 • 41/41 Tests Passing • Zero Errors*
